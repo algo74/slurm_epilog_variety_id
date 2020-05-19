@@ -53,7 +53,7 @@ static int _run_sevi(int sockfd) {
 
 int main(int argc, char *argv[]) {
   /* initializing server address */
-  char *server_string = getenv(REMOTE_SERVER_ENV_NAME);
+  const char *server_string = getenv(REMOTE_SERVER_ENV_NAME);
     if (server_string == NULL)
       server_string = REMOTE_SERVER_STRING;
   char * colon = strstr(server_string, ":");
