@@ -98,7 +98,7 @@ int connect_to_simple_server(char *addr, char *port) {
   struct addrinfo *addrs = NULL;
   int ret = getaddrinfo(addr, port, &hint, &addrs);
   if (ret != 0) {
-    printf("Could not resolve address\n");
+    printf("Could not resolve address %s:%s\n", addr, port);
     return -1;
 // <------
   }
