@@ -6,6 +6,8 @@
 #include "cJSON.h"
 #include "client.h"
 #include "configure.h"
+#include "xmalloc.h"
+#include "xstring.h"
 
 #define MAX 1024*4
 #define SA struct sockaddr
@@ -66,11 +68,11 @@ int main(int argc, char *argv[]) {
   update_and_get_server_address(&addr, &port);
 
   if (argc > 1) {
-    if (addr) free(addr);
-    addr = argv[1];
+    if (addr) xfree(addr);
+    addr = xstrdup(argv[1]);
     if (argc > 2) {
-      if (port) free (port);
-      port = argv[2];
+      if (port) xfree(port);
+      port = xstrdup(argv[2]);
     }
   }
 
@@ -92,8 +94,8 @@ int main(int argc, char *argv[]) {
       close(sockfd);
     }
   }
-  if (addr) free(addr);
-  if (port) free(port);
+  if (addr) xfree(addr);
+  if (port) xfree(port);
 
   return rc;
 }
