@@ -22,7 +22,7 @@ COMPILE=gcc -g -c
 # -dead_strip is for MacOS 
 # TODO: implement -Wl,--gc-sections or -Wl,--as-needed for other systems
 LINK=gcc
-CFLAGS=-I. -I$(ROOT) -I$(PATHS)
+CFLAGS=-std=gnu99 -I. -I$(ROOT) -I$(PATHS)
 
 BUILD_PATHS = $(PATHB) $(PATHO)
 

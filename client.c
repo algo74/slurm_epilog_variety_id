@@ -1,15 +1,16 @@
+#include "client.h"
+
+#include <arpa/inet.h>
 #include <netdb.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include "cJSON.h"
 
-#include "client.h"
+#include "cJSON.h"
 
 #define MAX 1024*4
 //#define SA struct sockaddr
@@ -47,7 +48,7 @@ send_receive(int sockfd, cJSON *req)
   free(req_str);
 
   for (;;) {
-    bzero(buff, sizeof(buff));
+    memset(buff, 0, sizeof(buff));
     read(sockfd, buff, MAX);
     printf("From Server : %s\n", buff);
     cJSON *resp = cJSON_Parse(buff);

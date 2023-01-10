@@ -11,7 +11,7 @@
 #include "xstring.h"
 
 static const char *ENVVAR_FILENAME = "VINSNL_CONFIG";
-static const size_t MAX_INT_STRING = ((CHAR_BIT * sizeof(int)) / 3 + 2);
+enum { MAX_INT_STRING = ((CHAR_BIT * sizeof(int)) / 3 + 2) };
 
 // static pthread_rwlock_t config_lock = PTHREAD_RWLOCK_INITIALIZER;
 static time_t last_config_time = 0;
