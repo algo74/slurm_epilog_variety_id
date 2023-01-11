@@ -1,16 +1,18 @@
+#include <execinfo.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
 #include <utime.h>
 
+#include "cJSON.h"
+#include "configure.h"
 #include "log.h"
+#include "unity.h"
 #include "xmalloc.h"
 #include "xstring.h"
-#include "configure.h"
-#include "cJSON.h"
-#include "unity.h"
 
 // INTERNALS
 
@@ -53,6 +55,11 @@ static void _assert_nothing_configured(char *prefix) {
 }
 
 // HELPERS
+
+static void _update_and_get_server_address_envvar(char **name, char **port)
+{
+  update_and_get_server_address(name, port, NULL);
+}
 
 static int _touch_file(const char *filename)
 // https://rosettacode.org/wiki/File_modification_time#C
@@ -115,7 +122,7 @@ void setUp(void) {
   fflush(stderr);
   fflush(stdout);
   setenv(ENVVAR_FILENAME, "test_config/null_server.json", 1);
-  update_and_get_server_address(&server_name, &server_port);
+  _update_and_get_server_address_envvar(&server_name, &server_port);
   unsetenv(ENVVAR_FILENAME);
   // _clear_server_strings();
 }
@@ -144,14 +151,14 @@ static void handler(int sig)
 void test_no_env_variable() {
   _assert_server_not_configured("Init");
   unsetenv(ENVVAR_FILENAME);
-  update_and_get_server_address(&server_name, &server_port);
+  _update_and_get_server_address_envvar(&server_name, &server_port);
   _assert_nothing_configured("After configure");
 }
 
 void test_missing_config_file() {
   _assert_server_not_configured("Init");
   setenv(ENVVAR_FILENAME, "test_config/nonexisting.file", 1);
-  update_and_get_server_address(&server_name, &server_port);
+  _update_and_get_server_address_envvar(&server_name, &server_port);
     _assert_nothing_configured("After configure");
 
 }
@@ -159,28 +166,35 @@ void test_missing_config_file() {
 void test_empty_config_file() {
   _assert_server_not_configured("Init");
   setenv(ENVVAR_FILENAME, "test_config/empty.txt", 1);
-  update_and_get_server_address(&server_name, &server_port);
+  _update_and_get_server_address_envvar(&server_name, &server_port);
     _assert_nothing_configured("After configure");
 }
 
 void test_empty_json() {
   _assert_server_not_configured("Init");
   setenv(ENVVAR_FILENAME, "test_config/empty.json", 1);
-  update_and_get_server_address(&server_name, &server_port);
+  _update_and_get_server_address_envvar(&server_name, &server_port);
     _assert_nothing_configured("After configure");
 }
 
 void test_error_json() {
   _assert_server_not_configured("Init");
   setenv(ENVVAR_FILENAME, "test_config/error.json", 1);
-  update_and_get_server_address(&server_name, &server_port);
+  _update_and_get_server_address_envvar(&server_name, &server_port);
     _assert_nothing_configured("After configure");
 }
 
 void test_all_json() {
   _assert_server_not_configured("Init");
   setenv(ENVVAR_FILENAME, "test_config/all.json", 1);
-  update_and_get_server_address(&server_name, &server_port);
+  _update_and_get_server_address_envvar(&server_name, &server_port);
+  TEST_ASSERT_EQUAL_STRING_MESSAGE("server.json_name", server_name, "server_name is properly set");
+  TEST_ASSERT_EQUAL_STRING_MESSAGE("server.json_port", server_port, "server_port is properly set");
+}
+
+void test_all_option_json() {
+  _assert_server_not_configured("Init");
+  update_and_get_server_address(&server_name, &server_port, "test_config/all.json");
   TEST_ASSERT_EQUAL_STRING_MESSAGE("server.json_name", server_name, "server_name is properly set");
   TEST_ASSERT_EQUAL_STRING_MESSAGE("server.json_port", server_port, "server_port is properly set");
 }
@@ -195,7 +209,7 @@ void test_null_server()
 void test_null_type() {
   _assert_server_not_configured("Init");
   setenv(ENVVAR_FILENAME, "test_config/null_type.json", 1);
-  update_and_get_server_address(&server_name, &server_port);
+  _update_and_get_server_address_envvar(&server_name, &server_port);
   TEST_ASSERT_EQUAL_STRING_MESSAGE("server.json_name", server_name, "server_name is properly set");
   TEST_ASSERT_EQUAL_STRING_MESSAGE("server.json_port", server_port, "server_port is properly set");
 }
@@ -203,7 +217,7 @@ void test_null_type() {
 void test_null_nodes() {
   _assert_server_not_configured("Init");
   setenv(ENVVAR_FILENAME, "test_config/null_nodes.json", 1);
-  update_and_get_server_address(&server_name, &server_port);
+  _update_and_get_server_address_envvar(&server_name, &server_port);
   TEST_ASSERT_EQUAL_STRING_MESSAGE("server.json_name", server_name, "server_name is properly set");
   TEST_ASSERT_EQUAL_STRING_MESSAGE("server.json_port", server_port, "server_port is properly set");
 }
@@ -211,7 +225,7 @@ void test_null_nodes() {
 void test_server() {
   _assert_server_not_configured("Init");
   setenv(ENVVAR_FILENAME, "test_config/server.json", 1);
-  update_and_get_server_address(&server_name, &server_port);
+  _update_and_get_server_address_envvar(&server_name, &server_port);
   TEST_ASSERT_EQUAL_STRING_MESSAGE("server.json_name", server_name, "server_name is properly set");
   TEST_ASSERT_EQUAL_STRING_MESSAGE("server.json_port", server_port, "server_port is properly set");
 }
@@ -219,7 +233,7 @@ void test_server() {
 void test_server_null() {
   _assert_server_not_configured("Init");
   setenv(ENVVAR_FILENAME, "test_config/server_null.json", 1);
-  update_and_get_server_address(&server_name, &server_port);
+  _update_and_get_server_address_envvar(&server_name, &server_port);
   TEST_ASSERT_EQUAL_STRING_MESSAGE(NULL, server_name, "server_name is properly set");
   TEST_ASSERT_EQUAL_STRING_MESSAGE(NULL, server_port, "server_port is properly set");
 }
@@ -227,28 +241,28 @@ void test_server_null() {
 void test_server_name_only() {
   _assert_server_not_configured("Init");
   setenv(ENVVAR_FILENAME, "test_config/server_name_only.json", 1);
-  update_and_get_server_address(&server_name, &server_port);
+  _update_and_get_server_address_envvar(&server_name, &server_port);
     _assert_nothing_configured("After configure");
 }
 
 void test_server_port_only() {
   _assert_server_not_configured("Init");
   setenv(ENVVAR_FILENAME, "test_config/server_port_only.json", 1);
-  update_and_get_server_address(&server_name, &server_port);
+  _update_and_get_server_address_envvar(&server_name, &server_port);
     _assert_nothing_configured("After configure");
 }
 
 void test_nodes_json() {
   _assert_server_not_configured("Init");
   setenv(ENVVAR_FILENAME, "test_config/nodes.json", 1);
-  update_and_get_server_address(&server_name, &server_port);
+  _update_and_get_server_address_envvar(&server_name, &server_port);
   _assert_server_not_configured("Init");
 }
 
 void test_nodes_string_json() {
   _assert_server_not_configured("Init");
   setenv(ENVVAR_FILENAME, "test_config/nodes_string.json", 1);
-  update_and_get_server_address(&server_name, &server_port);
+  _update_and_get_server_address_envvar(&server_name, &server_port);
   _assert_server_not_configured("Init");
 }
 
@@ -262,19 +276,19 @@ void test_config_reload_json()
   TEST_ASSERT_MESSAGE(mtime > 0, "No errors resetting files times");
   _assert_server_not_configured("Init");
   setenv(ENVVAR_FILENAME, file1, 1);
-  update_and_get_server_address(&server_name, &server_port);
+  _update_and_get_server_address_envvar(&server_name, &server_port);
   TEST_ASSERT_EQUAL_STRING_MESSAGE("server1.json_name", server_name, "server_name is properly set");
   TEST_ASSERT_EQUAL_STRING_MESSAGE("server1.json_port", server_port, "server_port is properly set");
   // second configure - file not changed
   // _clear_server_strings();
   setenv(ENVVAR_FILENAME, file2, 1);
-  update_and_get_server_address(&server_name, &server_port);
+  _update_and_get_server_address_envvar(&server_name, &server_port);
   TEST_ASSERT_EQUAL_STRING_MESSAGE("server1.json_name", server_name, "Second configure: server_name is unchanged");
   TEST_ASSERT_EQUAL_STRING_MESSAGE("server1.json_port", server_port, "Second configure: server_port is unchange");
   // third configure - newer config file
   _retouch_file(file2, mtime + 1);
   // _clear_server_strings();
-  update_and_get_server_address(&server_name, &server_port);
+  _update_and_get_server_address_envvar(&server_name, &server_port);
   TEST_ASSERT_EQUAL_STRING_MESSAGE("server2.json_name", server_name, "Third configure: server_name is properly set");
   TEST_ASSERT_EQUAL_STRING_MESSAGE("server2.json_port", server_port, "Third configure: server_port is properly set");
 }
@@ -298,6 +312,7 @@ int main() {
   RUN_TEST(test_null_nodes);
   RUN_TEST(test_null_type);
   RUN_TEST(test_config_reload_json);
+  RUN_TEST(test_all_option_json);
 
   return UNITY_END();
 }

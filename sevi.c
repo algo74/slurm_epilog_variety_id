@@ -1,3 +1,4 @@
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -53,39 +54,75 @@ static int _run_sevi(int sockfd) {
   return rc;
 }
 
+static void _print_help(char *name) 
+{
+  printf("Arguments: \n");
+  printf("  -n, --name: name of the host (overwrites config).\n");
+  printf("  -p, --port: port of the host (overwrites config).\n");
+  printf("  -c, --config: path to a config JSON file (overwrites env. variable).\n");
+}
 
-
-int main(int argc, char *argv[]) {
+int sevi(int argc, char *argv[]) {
   /* initializing server address */
   char *addr = NULL;
   char *port = NULL;
+  char *config_filename = NULL;
 
+  struct option long_options[] = {
+      {"name", optional_argument, NULL, 'n'},
+      {"port", optional_argument, NULL, 'p'},
+      {"config", optional_argument, NULL, 'c'},
+      {0, 0, 0, 0}};
+  char *optstring = "n:p:c:";
+  int option_index = 0, c;
+  while (1) {
+    c = getopt_long(argc, argv, optstring, long_options, &option_index);
+    if (c == -1)
+      break;
+
+    switch (c) {
+      case 'n':
+        addr = optarg;
+        break;
+      case 'p':
+        port = optarg;
+        break;
+      case 'c':
+        config_filename = optarg;
+        break;
+      default:
+        _print_help(argv[0]);
+        exit(1);
+    }
+  }
 
   int sockfd;
 
   int rc = 999;
 
-  update_and_get_server_address(&addr, &port);
-
-  if (argc > 1) {
-    if (addr) xfree(addr);
-    addr = xstrdup(argv[1]);
-    if (argc > 2) {
-      if (port) xfree(port);
-      port = xstrdup(argv[2]);
-    }
+  if (!addr || !port) {
+    char *addr1 = NULL;
+    char *port1 = NULL;
+    update_and_get_server_address(&addr1, &port1, config_filename);
+    if (!addr) addr = addr1;
+    if (!port) port = port1;
   }
+
+  printf("addr: %s ; port: %s \n", addr, port);
 
   if (!addr || !port) {
     rc = 1;
+    printf("Error: either port or address is not set \n");
   } else {
     sockfd = connect_to_simple_server(addr, port);
 
     if (sockfd == -1) {
       rc = 2;
+      printf("Error: could not connect \n");
+
     } else {
 
-      printf("addr: %s ; port: %s \n", addr, port);
+      
 
       // run the main task
       rc = _run_sevi(sockfd);

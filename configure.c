@@ -38,11 +38,11 @@ static bool _config_vnlsnl_server(time_t reference_time, time_t config_time, cha
   return been_updated;
 }
 
-void server_configure()
+void server_configure(char *filename)
 {
-  char *filename = getenv(ENVVAR_FILENAME);
+  if (!filename) filename = getenv(ENVVAR_FILENAME);
   if (!filename) {
-    info("%s: Env. variable \"%s\" is not set; VINSNL is not configured", __func__, ENVVAR_FILENAME);
+    info("%s: Env. variable \"%s\" is not set", __func__, ENVVAR_FILENAME);
     return;
   }
   struct stat file_stat;
@@ -51,7 +51,7 @@ void server_configure()
     memset(&file_stat, 0, sizeof(file_stat));
     int rc = stat(filename, &file_stat);
     if (rc != 0) {
-      info("%s: Cannot access information about the file \"%s\"; VINSNL is not configured", __func__, filename);
+      info("%s: Cannot access information about the file \"%s\"", __func__, filename);
       return;
     }
     // file exists or such...
@@ -59,14 +59,14 @@ void server_configure()
     time_t reference_time = last_config_time;
     // slurm_rwlock_unlock(&config_lock);
     if (been_read_config && reference_time == file_stat.st_mtime) {
-      debug5("%s: Config file \"%s\" is unchanged; VINSNL is not configured", __func__, filename);
+      debug5("%s: Config file \"%s\" is unchanged", __func__, filename);
       return;
     }
     // either first config or the config file was changed
     size_t file_size = file_stat.st_size;
     char *file_content = xmalloc(file_size + 2);
     if (!file_content) {
-      error("%s: cannot allocate %zu bytes to read the config file (%s); VINSNL is not configured", __func__, file_size + 1, filename);
+      error("%s: cannot allocate %zu bytes to read the config file (%s)", __func__, file_size + 1, filename);
       return;
     }
     memset(file_content, 0, file_size + 2);
@@ -155,9 +155,9 @@ void server_configure()
 //   // slurm_rwlock_unlock(&config_lock);
 // }
 
-void update_and_get_server_address(char **name, char **port)
+void update_and_get_server_address(char **name, char **port, char *config_filename)
 {
-  server_configure();
+  server_configure(config_filename);
   *name = server_name;
   *port = server_port;
 }
